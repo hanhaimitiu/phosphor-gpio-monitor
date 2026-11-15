@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 720" font-family="'Segoe UI','Microsoft YaHei',sans-serif">
+  <style>
+    .panel{fill:#ffffff;stroke:#d8d2c7;stroke-width:1.5;}
+    .phead{fill:#ece7df;stroke:#d8d2c7;stroke-width:1.5;}
+    .ptitle{fill:#2d2a27;font-size:15px;font-weight:700;}
+    .box{fill:#ffffff;stroke:#3f6b78;stroke-width:1.5;rx:6;}
+    .bbox{fill:#e3ecee;stroke:#3f6b78;stroke-width:1.5;rx:6;}
+    .bmain{fill:#2d2a27;font-size:13px;font-weight:600;}
+    .bsub{fill:#5c5650;font-size:11px;}
+    .arrow{stroke:#3f6b78;stroke-width:1.8;fill:none;}
+    .acc{fill:#3f6b78;font-size:12.5px;font-weight:700;}
+    .note{fill:#a86a4c;font-size:11.5px;}
+    .dmn{fill:#f4f1ea;stroke:#c9c2b6;stroke-width:1.2;rx:6;}
+    .dl{fill:#5c5650;font-size:10.5px;}
+    .dlh{fill:#2d2a27;font-size:11px;font-weight:700;}
+    .ttl{fill:#2d2a27;font-size:17px;font-weight:700;}
+    .role{fill:#5c5650;font-size:12px;}
+  </style>
+
+  <text x="380" y="30" text-anchor="middle" class="ttl">phosphor-gpio-monitor</text>
+  <text x="380" y="50" text-anchor="middle" class="role">旁路感知 · 4 个守护进程，监听 GPIO → 启动 systemd target / 上报 inventory 在位</text>
+
+  <!-- Panel A 业务流程 -->
+  <rect class="panel" x="20" y="64" width="720" height="300" rx="6"/>
+  <rect class="phead" x="20" y="64" width="720" height="32" rx="6"/>
+  <text x="34" y="86" class="ptitle">一、业务流程：一条 GPIO 事件如何被处理</text>
+
+  <rect class="box" x="90" y="104" width="580" height="40" rx="6"/>
+  <text x="110" y="124" class="bmain">GPIO 电平变化（libgpiod 线名来自 JSON 配置）</text>
+  <text x="110" y="139" class="bsub">requestGPIOEvents() 拿 event fd</text>
+
+  <line class="arrow" x1="380" y1="144" x2="380" y2="158"/>
+  <polygon points="372,156 388,156 380,168" fill="#3f6b78"/>
+
+  <rect class="box" x="90" y="168" width="580" height="46" rx="6"/>
+  <text x="110" y="188" class="bmain">boost::asio 异步等 fd：scheduleEventHandler() → async_wait 回调</text>
+  <text x="110" y="205" class="bsub">gpioEventHandler() 读 gpiod_line_event（OpenBMC 新式守护进程通用写法）</text>
+
+  <line class="arrow" x1="380" y1="214" x2="380" y2="228"/>
+  <polygon points="372,226 388,226 380,238" fill="#3f6b78"/>
+
+  <rect class="box" x="90" y="238" width="580" height="46" rx="6"/>
+  <text x="110" y="258" class="bmain">分支 A（monitor）：启动 systemd target / targets</text>
+  <text x="110" y="275" class="bsub">如 obmc-chassis-hard-poweroff@0.target（对 systemd1 StartUnit）</text>
+
+  <line class="arrow" x1="380" y1="284" x2="380" y2="298"/>
+  <polygon points="372,296 388,296 380,308" fill="#3f6b78"/>
+
+  <rect class="bbox" x="90" y="308" width="580" height="46" rx="6"/>
+  <text x="110" y="328" class="bmain">分支 B（presence）：判断设备插没插 → 更新 inventory Present</text>
+  <text x="110" y="345" class="bsub">updateInventory → mapper 查 Inventory.Manager → Notify（写 Present）</text>
+
+  <text x="700" y="196" text-anchor="end" class="note">启动初始电平恢复：</text>
+  <text x="700" y="212" text-anchor="end" class="note">gpioHandleInitialState()</text>
+  <text x="700" y="228" text-anchor="end" class="note">按 INIT_HIGH/INIT_LOW 先拉</text>
+  <text x="700" y="244" text-anchor="end" class="note">target，处理 BMC 重启时已</text>
+  <text x="700" y="260" text-anchor="end" class="note">处于某状态的恢复问题</text>
+
+  <!-- Panel B 体系结构 -->
+  <rect class="panel" x="20" y="380" width="720" height="170" rx="6"/>
+  <rect class="phead" x="20" y="380" width="720" height="32" rx="6"/>
+  <text x="34" y="402" class="ptitle">二、代码体系结构：4 个守护进程</text>
+
+  <rect class="dmn" x="60" y="424" width="320" height="110" rx="6"/>
+  <text x="74" y="444" class="dlh">monitor 类（GPIO → target）</text>
+  <text x="74" y="464" class="dl">· phosphor-gpio-monitor（单线，命令行）</text>
+  <text x="74" y="482" class="dl">· phosphor-multi-gpio-monitor（JSON 配多条）</text>
+  <text x="74" y="502" class="dl">  底层：libgpiod + boost::asio</text>
+  <text x="74" y="520" class="dl">  关键：gpioMon.cpp scheduleEventHandler</text>
+
+  <rect class="dmn" x="400" y="424" width="320" height="110" rx="6"/>
+  <text x="414" y="444" class="dlh">presence 类（在位 → inventory）</text>
+  <text x="414" y="464" class="dl">· phosphor-gpio-presence（evdev 版）</text>
+  <text x="414" y="482" class="dl">· phosphor-multi-gpio-presence（libgpiod 版）</text>
+  <text x="414" y="502" class="dl">  bindOrUnbindDrivers（DRIVER_BIND_DELAY_MS）</text>
+  <text x="414" y="520" class="dl">  getService() 用 mapper 反查，不写死服务名</text>
+
+  <!-- Panel C 交互 -->
+  <rect class="panel" x="20" y="562" width="720" height="140" rx="6"/>
+  <rect class="phead" x="20" y="562" width="720" height="32" rx="6"/>
+  <text x="34" y="584" class="ptitle">三、对外 D-Bus 交互</text>
+
+  <text x="40" y="612" class="acc">出站（调谁）：</text>
+  <text x="40" y="632" class="dl">· org.freedesktop.systemd1 StartUnit（启动 target / targets）</text>
+  <text x="40" y="650" class="dl">· xyz.openbmc_project.Inventory.Manager Notify（写 Present 属性）</text>
+
+  <text x="40" y="674" class="acc">习惯用法：</text>
+  <text x="40" y="694" class="dl">· 不写死服务名：getService() 经 mapper（GetObject）反查 bus name（全仓库惯例）</text>
+</svg>
