@@ -12,6 +12,7 @@ namespace gpio
 {
 
 /* systemd service to kick start a target. */
+/* 用于启动 target 的 systemd 服务。 */
 constexpr auto SYSTEMD_SERVICE = "org.freedesktop.systemd1";
 constexpr auto SYSTEMD_ROOT = "/org/freedesktop/systemd1";
 constexpr auto SYSTEMD_INTERFACE = "org.freedesktop.systemd1.Manager";
@@ -57,6 +58,7 @@ void GpioMonitor::gpioEventHandler()
     }
 
     /* Execute the target if it is defined. */
+    /* 如果定义了 target，则执行它。 */
     if (!target.empty())
     {
         auto bus = sdbusplus::bus::new_default();
@@ -87,6 +89,7 @@ void GpioMonitor::gpioEventHandler()
     }
 
     /* Execute the multi targets if it is defined. */
+    /* 如果定义了多个 target，则执行它们。 */
     if (!targetsToStart.empty())
     {
         auto bus = sdbusplus::bus::new_default();
@@ -100,12 +103,14 @@ void GpioMonitor::gpioEventHandler()
     }
 
     /* if not required to continue monitoring then return */
+    /* 如果不需要继续监控，则返回 */
     if (!continueAfterEvent)
     {
         return;
     }
 
     /* Schedule a wait event */
+    /* 调度一个等待事件 */
     scheduleEventHandler();
 }
 
@@ -128,6 +133,7 @@ void GpioMonitor::gpioHandleInitialState(bool value)
 int GpioMonitor::requestGPIOEvents()
 {
     /* Request an event to monitor for respected gpio line */
+    /* 为相应的 GPIO line 请求一个要监控的事件 */
     if (gpiod_line_request(gpioLine, &gpioConfig, 0) < 0)
     {
         lg2::error("Failed to request {GPIO}", "GPIO", gpioLineMsg);
@@ -155,9 +161,11 @@ int GpioMonitor::requestGPIOEvents()
     lg2::info("{GPIO} monitoring started", "GPIO", gpioLineMsg);
 
     /* Assign line fd to descriptor for monitoring */
+    /* 将 line fd 赋给描述符以进行监控 */
     gpioEventDescriptor.assign(gpioLineFd);
 
     /* Schedule a wait event */
+    /* 调度一个等待事件 */
     scheduleEventHandler();
 
     return 0;

@@ -11,10 +11,13 @@ namespace gpio
 /** @class FileDescriptor
  *  @brief Responsible for handling file descriptor
  */
+/* @class FileDescriptor
+ *  @brief 负责管理文件描述符 */
 class FileDescriptor
 {
   private:
     /** @brief File descriptor for the gpio input device */
+    /* @brief GPIO 输入设备的文件描述符 */
     int fd = -1;
 
   public:
@@ -28,9 +31,12 @@ class FileDescriptor
      *
      *  @param[in] fd - File descriptor
      */
+    /* @brief 保存文件描述符并用它执行文件操作
+     *  @param[in] fd - 文件描述符 */
     explicit FileDescriptor(int fd) : fd(fd)
     {
         // Nothing
+        // 无需操作
     }
 
     ~FileDescriptor()

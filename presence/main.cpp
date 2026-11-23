@@ -23,6 +23,12 @@ using namespace phosphor::gpio::presence;
  *
  * @return int - 0 if successful, < 0 else
  */
+/* 从传入的字符串中提取 path,device 对，
+ * 字符串由调用方传入
+ * @param[in] driverString - 以空格分隔的 path,device 对
+ * @param[out] drivers - 由 driverString 填充的 device,path
+ *                       元组向量
+ * @return int - 成功返回 0，否则返回 < 0 */
 static int getDrivers(const std::string& driverString,
                       std::vector<Driver>& drivers)
 {
@@ -33,6 +39,7 @@ static int getDrivers(const std::string& driverString,
         std::string entry;
 
         // Extract each path,device pair
+        // 提取每一对 path,device
         stream >> entry;
 
         if (entry.empty())
@@ -41,6 +48,7 @@ static int getDrivers(const std::string& driverString,
         }
 
         // Extract the path and device and save them
+        // 提取 path 和 device 并保存
         auto pos = entry.rfind(',');
         if (pos != std::string::npos)
         {
@@ -72,6 +80,7 @@ int main(int argc, char** argv)
     std::string ifaces{};
 
     /* Add an input option */
+    /* 添加一个输入选项 */
     app.add_option(
            "-p,--path", path,
            " Path of device to read for GPIO pin state to determine presence of inventory item")
@@ -96,6 +105,7 @@ int main(int argc, char** argv)
         ->expected(0, 1);
 
     /* Parse input parameter */
+    /* 解析输入参数 */
     try
     {
         app.parse(argc, argv);
@@ -108,6 +118,7 @@ int main(int argc, char** argv)
     std::vector<Driver> driverList;
 
     // Driver list is optional
+    // 驱动列表是可选的
     if (!drivers.empty())
     {
         if (getDrivers(drivers, driverList) < 0)
@@ -121,6 +132,7 @@ int main(int argc, char** argv)
     std::vector<Interface> ifaceList;
 
     // Extra interfaces list is optional
+    // 额外接口列表是可选的
     if (!ifaces.empty())
     {
         std::stringstream ss(ifaces);
@@ -149,6 +161,7 @@ int main(int argc, char** argv)
     while (true)
     {
         // -1 denotes wait forever
+        // -1 表示永久等待
         rc = sd_event_run(eventP.get(), (uint64_t)-1);
         if (rc < 0)
         {

@@ -61,6 +61,7 @@ GpioPresence::ObjectMap GpioPresence::getObjectMap(bool present)
     invProp.emplace("PrettyName", name);
     invIntf.emplace("xyz.openbmc_project.Inventory.Item", std::move(invProp));
     // Add any extra interfaces we want to associate with the inventory item
+    // 添加我们想要与 inventory 条目关联的所有额外接口
     for (auto& iface : interfaces)
     {
         invIntf.emplace(iface, PropertyMap());
@@ -82,6 +83,7 @@ void GpioPresence::updateInventory(bool present)
     auto invService = getService(INVENTORY_PATH, INVENTORY_INTF, bus);
 
     // Update inventory
+    // 更新 inventory
     auto invMsg = bus.new_method_call(invService.c_str(), INVENTORY_PATH,
                                       INVENTORY_INTF, "Notify");
     invMsg.append(std::move(invObj));
@@ -108,6 +110,7 @@ void GpioPresence::scheduleEventHandler()
             if (ec == boost::asio::error::operation_aborted)
             {
                 // we were cancelled
+                // 我们被取消了
                 return;
             }
             if (ec)
@@ -147,6 +150,7 @@ void GpioPresence::gpioEventHandler()
     updateInventory(gpioLineEvent.event_type == GPIOD_LINE_EVENT_RISING_EDGE);
 
     /* Schedule a wait event */
+    /* 调度一个等待事件 */
     scheduleEventHandler();
 }
 
@@ -155,6 +159,7 @@ int GpioPresence::requestGPIOEvents()
     std::string flags;
 
     /* Request an event to monitor for respected gpio line */
+    /* 为相应的 GPIO line 请求一个要监控的事件 */
     if (gpiod_line_request(gpioLine, &gpioConfig, 0) < 0)
     {
         lg2::error("Failed to request {GPIO}: {ERRNO}", "GPIO", gpioLineMsg,
@@ -196,11 +201,13 @@ int GpioPresence::requestGPIOEvents()
               flags);
 
     /* Assign line fd to descriptor for monitoring */
+    /* 将 line fd 赋给描述符以进行监控 */
     gpioEventDescriptor.assign(gpioLineFd);
 
     updateInventory(gpiod_line_get_value(gpioLine));
 
     /* Schedule a wait event */
+    /* 调度一个等待事件 */
     scheduleEventHandler();
 
     return 0;

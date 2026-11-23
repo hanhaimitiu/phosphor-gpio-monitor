@@ -17,12 +17,16 @@ namespace gpio
 
 const std::map<std::string, int> biasMap = {
     /**< Set bias as is. */
+    /* < 保持偏置设置不变。 */
     {"AS_IS", 0},
     /**< Disable bias. */
+    /* < 禁用偏置。 */
     {"DISABLE", GPIOD_LINE_REQUEST_FLAG_BIAS_DISABLE},
     /**< Enable pull-up. */
+    /* < 启用上拉。 */
     {"PULL_UP", GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP},
     /**< Enable pull-down. */
+    /* < 启用下拉。 */
     {"PULL_DOWN", GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_DOWN}};
 }
 } // namespace phosphor
@@ -36,11 +40,13 @@ int main(int argc, char** argv)
     std::string gpioFileName;
 
     /* Add an input option */
+    /* 添加一个输入选项 */
     app.add_option("-c,--config", gpioFileName, "Name of config json file")
         ->required()
         ->check(CLI::ExistingFile);
 
     /* Parse input parameter */
+    /* 解析输入参数 */
     try
     {
         app.parse(argc, argv);
@@ -51,6 +57,7 @@ int main(int argc, char** argv)
     }
 
     /* Get list of gpio config details from json file */
+    /* 从 json 文件中获取 GPIO 配置详情列表 */
     std::ifstream file(gpioFileName);
     if (!file)
     {
@@ -67,22 +74,28 @@ int main(int argc, char** argv)
     for (auto& obj : gpioMonObj)
     {
         /* GPIO Line message */
+        /* GPIO line 消息 */
         std::string lineMsg = "GPIO Line ";
 
+        /* GPIO line */
         /* GPIO line */
         gpiod_line* line = nullptr;
 
         /* GPIO line configuration, default to monitor both edge */
+        /* GPIO line 配置，默认监控双边沿 */
         struct gpiod_line_request_config config{
             "gpio_monitor", GPIOD_LINE_REQUEST_EVENT_BOTH_EDGES, 0};
 
         /* Pretty name of the inventory object */
+        /* inventory 对象的友好名称 */
         std::string name;
 
         /* Object path under inventory that will be created */
+        /* 将要创建的 inventory 下的对象路径 */
         std::string inventory;
 
         /* List of interfaces to associate to inventory item */
+        /* 要关联到 inventory 条目的接口列表 */
         std::vector<std::string> extraInterfaces;
 
         if (obj.find("LineName") == obj.end())
@@ -91,6 +104,9 @@ int main(int argc, char** argv)
              * id must be defined. GpioNum is integer mapping to the
              * GPIO key configured by the kernel
              */
+            /* 如果没有定义 line 名称，则必须定义 gpio num 和 chip
+             * id。GpioNum 是映射到内核配置的
+             * GPIO key 的整数 */
             if (obj.find("GpioNum") == obj.end() ||
                 obj.find("ChipId") == obj.end())
             {
@@ -105,11 +121,13 @@ int main(int argc, char** argv)
             lineMsg += chipIdStr + " " + std::to_string(gpioNum);
 
             /* Get the GPIO line */
+            /* 获取 GPIO line */
             line = gpiod_line_get(chipIdStr.c_str(), gpioNum);
         }
         else
         {
             /* Find the GPIO line */
+            /* 查找 GPIO line */
             std::string lineName = obj["LineName"].get<std::string>();
             lineMsg += lineName;
             line = gpiod_line_find(lineName.c_str());
@@ -122,6 +140,7 @@ int main(int argc, char** argv)
         }
 
         /* Parse out inventory argument. */
+        /* 解析 inventory 参数。 */
         if (obj.find("Inventory") == obj.end())
         {
             lg2::error("{GPIO}: Inventory path not specified", "GPIO", lineMsg);
@@ -143,6 +162,7 @@ int main(int argc, char** argv)
         }
 
         /* Parse optional bias */
+        /* 解析可选的偏置设置 */
         if (obj.find("Bias") != obj.end())
         {
             std::string biasName = obj["Bias"].get<std::string>();
@@ -158,18 +178,21 @@ int main(int argc, char** argv)
         }
 
         /* Parse optional active level */
+        /* 解析可选的有效电平 */
         if (obj.find("ActiveLow") != obj.end() && obj["ActiveLow"].get<bool>())
         {
             config.flags |= GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW;
         }
 
         /* Parse optional extra interfaces */
+        /* 解析可选的额外接口 */
         if (obj.find("ExtraInterfaces") != obj.end())
         {
             obj.at("ExtraInterfaces").get_to(extraInterfaces);
         }
 
         /* Create a monitor object and let it do all the rest */
+        /* 创建一个监控对象，其余工作交由它完成 */
         gpios.push_back(phosphor::gpio::GpioPresence(
             line, config, io, inventory, extraInterfaces, name, lineMsg));
     }
